@@ -19,7 +19,7 @@ exports.createBook = (req, res, next) => {
       res.status(201).json({ message: "Objet enregistré !" });
     })
     .catch((error) => {
-      res.status(400).json({ error });
+      res.status(404).json({ error });
     });
 };
 
@@ -28,23 +28,21 @@ exports.createRating = (req, res, next) => {
   const bookId = req.params.id;
   const userId = req.auth.userId;
 
-  // Validate rating between 0 and 5
   if (rating < 0 || rating > 5) {
-    return res.status(400).json({ error: "Rating must be between 0 and 5" });
+    return res
+      .status(400)
+      .json({ error: "La note doit être comprise entre 0 et 5" });
   }
 
   Book.findOne({ _id: bookId })
     .then((book) => {
-      // Check if user has already rated
       const userRatingIndex = book.ratings.findIndex(
         (rating) => rating.userId === userId
       );
 
       if (userRatingIndex !== -1) {
-        // Update existing rating
         book.ratings[userRatingIndex].grade = rating;
       } else {
-        // Add new rating
         book.ratings.push({
           userId: userId,
           grade: rating,
@@ -59,7 +57,7 @@ exports.createRating = (req, res, next) => {
       return book.save();
     })
     .then((book) => res.status(200).json(book))
-    .catch((error) => res.status(400).json({ error }));
+    .catch((error) => res.status(404).json({ error }));
 };
 
 exports.getBestRating = (req, res, next) => {
@@ -79,26 +77,24 @@ exports.getOneBook = (req, res, next) => {
 exports.getAllBooks = (req, res, next) => {
   Book.find()
     .then((books) => res.status(200).json(books))
-    .catch((error) => res.status(400).json({ error }));
+    .catch((error) => res.status(404).json({ error }));
 };
 
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: "Book not found" });
+        return res.status(404).json({ error: "Livre non trouvé" });
       }
       if (book.userId !== req.auth.userId) {
-        return res.status(403).json({ error: "Unauthorized request" });
+        return res.status(403).json({ error: "Requête interdite" });
       }
 
       const filename = book.imageUrl.split("/images/")[1];
       fs.unlink(`images/${filename}`, () => {
         Book.deleteOne({ _id: req.params.id })
-          .then(() =>
-            res.status(200).json({ message: "Book deleted successfully" })
-          )
-          .catch((error) => res.status(400).json({ error }));
+          .then(() => res.status(200).json({ message: "Livre supprimé" }))
+          .catch((error) => res.status(404).json({ error }));
       });
     })
     .catch((error) => res.status(500).json({ error }));
@@ -117,17 +113,21 @@ exports.modifyBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
-        return res.status(404).json({ error: "Book not found" });
+        return res.status(404).json({ error: "Livre non trouvé" });
       }
       if (book.userId !== req.auth.userId) {
-        return res.status(403).json({ error: "Unauthorized request" });
+        return res.status(403).json({ error: "Requête interdite" });
       }
 
       // If there's a new image, delete the old one
       if (req.file) {
         const filename = book.imageUrl.split("/images/")[1];
         fs.unlink(`images/${filename}`, (err) => {
-          if (err) console.log("Error deleting old image:", err);
+          if (err)
+            console.log(
+              "Erreur lors de la suppression de l'ancienne image:",
+              err
+            );
         });
       }
 
@@ -135,10 +135,8 @@ exports.modifyBook = (req, res, next) => {
         { _id: req.params.id },
         { ...bookObject, _id: req.params.id }
       )
-        .then(() =>
-          res.status(200).json({ message: "Book updated successfully" })
-        )
-        .catch((error) => res.status(400).json({ error }));
+        .then(() => res.status(200).json({ message: "Livre mis à jour" }))
+        .catch((error) => res.status(404).json({ error }));
     })
     .catch((error) => res.status(500).json({ error }));
 };

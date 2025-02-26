@@ -1,6 +1,6 @@
 const multer = require("multer");
-const sharp = require('sharp');
-const fs = require('fs');
+const sharp = require("sharp");
+const fs = require("fs");
 
 const MIME_TYPES = {
   "image/jpg": "jpg",
@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage }).single('image');
+const upload = multer({ storage: storage }).single("image");
 
 const resizeImage = (req, res, next) => {
   if (!req.file) {
@@ -28,23 +28,33 @@ const resizeImage = (req, res, next) => {
 
   const filePath = req.file.path;
   const fileName = req.file.filename;
+  const newFileName = "resized_" + fileName;
+  const newFilePath = filePath.replace(fileName, newFileName);
 
   sharp(filePath)
     .resize(800, 600, {
-      fit: 'contain',
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
+      fit: "contain",
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
     })
     .toBuffer()
-    .then(buffer => {
-      fs.writeFile(filePath, buffer, (err) => {
+    .then((buffer) => {
+      fs.writeFile(newFilePath, buffer, (err) => {
         if (err) {
-          console.error('Error resizing image:', err);
+          console.error("Soucis pour redimensioner:", err);
+          next();
+        } else {
+          // Delete the original file and update req.file with new path
+          fs.unlink(filePath, (err) => {
+            if (err) console.error("Erreur lors de la suppression:", err);
+          });
+          req.file.filename = newFileName;
+          req.file.path = newFilePath;
+          next();
         }
-        next();
       });
     })
-    .catch(error => {
-      console.error('Error processing image:', error);
+    .catch((error) => {
+      console.error("Erreur:", error);
       next();
     });
 };
@@ -52,7 +62,7 @@ const resizeImage = (req, res, next) => {
 module.exports = (req, res, next) => {
   upload(req, res, (err) => {
     if (err) {
-      res.status(400).json({ error: err.message });
+      res.status(404).json({ error: err.message });
     } else {
       resizeImage(req, res, next);
     }
