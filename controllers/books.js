@@ -49,11 +49,9 @@ exports.createRating = (req, res, next) => {
         });
       }
 
-      // Calculate average rating
       const sum = book.ratings.reduce((acc, curr) => acc + curr.grade, 0);
       book.averageRating = sum / book.ratings.length;
 
-      // Save updated book
       return book.save();
     })
     .then((book) => res.status(200).json(book))
@@ -119,7 +117,6 @@ exports.modifyBook = (req, res, next) => {
         return res.status(403).json({ error: "Requête interdite" });
       }
 
-      // If there's a new image, delete the old one
       if (req.file) {
         const filename = book.imageUrl.split("/images/")[1];
         fs.unlink(`images/${filename}`, (err) => {

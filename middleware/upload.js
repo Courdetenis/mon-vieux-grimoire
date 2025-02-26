@@ -43,7 +43,6 @@ const resizeImage = (req, res, next) => {
           console.error("Soucis pour redimensioner:", err);
           next();
         } else {
-          // Delete the original file and update req.file with new path
           fs.unlink(filePath, (err) => {
             if (err) console.error("Erreur lors de la suppression:", err);
           });
