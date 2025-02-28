@@ -32,10 +32,12 @@ const resizeImage = (req, res, next) => {
   const newFilePath = filePath.replace(fileName, newFileName);
 
   sharp(filePath)
-    .resize(800, 600, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    .resize(206, 260, {
+      // Dimensions fixes pour tous les livres
+      fit: "cover", // Garantit le remplissage complet
+      position: "center", // Centre l'image
     })
+    .toFormat("webp") // Format optimisé pour le web
     .toBuffer()
     .then((buffer) => {
       fs.writeFile(newFilePath, buffer, (err) => {
