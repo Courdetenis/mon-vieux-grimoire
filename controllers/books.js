@@ -3,8 +3,8 @@ const fs = require("fs");
 
 exports.createBook = (req, res, next) => {
   const bookConfig = JSON.parse(req.body.book);
-  delete req.body._id;
-  delete req.body._userId;
+  delete bookConfig._id;
+  delete bookConfig._userId;
 
   const book = new Book({
     ...bookConfig,
@@ -107,6 +107,7 @@ exports.modifyBook = (req, res, next) => {
         }`,
       }
     : { ...req.body };
+  delete bookObject._userId;
 
   Book.findOne({ _id: req.params.id })
     .then((book) => {
@@ -119,21 +120,18 @@ exports.modifyBook = (req, res, next) => {
 
       if (req.file) {
         const filename = book.imageUrl.split("/images/")[1];
-        fs.unlink(`images/${filename}`, (err) => {
-          if (err)
-            console.log(
-              "Erreur lors de la suppression de l'ancienne image:",
-              err
-            );
-        });
+        try {
+          fs.unlinkSync(`images/${filename}`); // Utilisation de la version synchrone
+        } catch (err) {
+          console.error("Erreur lors de la suppression:", err);
+        }
       }
 
-      Book.updateOne(
+      return Book.updateOne(
         { _id: req.params.id },
         { ...bookObject, _id: req.params.id }
-      )
-        .then(() => res.status(200).json({ message: "Livre mis à jour" }))
-        .catch((error) => res.status(404).json({ error }));
+      );
     })
+    .then(() => res.status(200).json({ message: "Livre mis à jour" }))
     .catch((error) => res.status(500).json({ error }));
 };
