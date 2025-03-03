@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
     callback(null, "images");
   },
   filename: (req, file, callback) => {
-    const name = file.originalname.split(" ").join("_");
+    const name = file.originalname.split(" ").join("_").split(".")[0];
     const extension = MIME_TYPES[file.mimetype];
     callback(null, name + Date.now() + "." + extension);
   },
@@ -28,16 +28,16 @@ const resizeImage = (req, res, next) => {
 
   const filePath = req.file.path;
   const fileName = req.file.filename;
-  const newFileName = "resized_" + fileName;
+  // Modifié pour forcer l'extension .webp
+  const newFileName = "resized_" + fileName.split(".")[0] + ".webp";
   const newFilePath = filePath.replace(fileName, newFileName);
 
   sharp(filePath)
     .resize(206, 260, {
-      // Dimensions fixes pour tous les livres
-      fit: "cover", // Garantit le remplissage complet
-      position: "center", // Centre l'image
+      fit: "cover",
+      position: "center",
     })
-    .toFormat("webp") // Format optimisé pour le web
+    .toFormat("webp")
     .toBuffer()
     .then((buffer) => {
       fs.writeFile(newFilePath, buffer, (err) => {
